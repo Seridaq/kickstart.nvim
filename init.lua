@@ -62,7 +62,6 @@ vim.opt.rtp:prepend(lazypath)
 
 -- Setup tabstops
 vim.opt.tabstop = 4
-vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.colorcolumn = '72'
 
@@ -82,6 +81,12 @@ require('lazy').setup({
   -- Detect tabstop and shiftwidth automatically
   'tpope/vim-sleuth',
 
+  {
+    "rcarriga/nvim-dap-ui",
+    dependencies = {
+      "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio"
+    },
+  },
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
   {
@@ -94,10 +99,11 @@ require('lazy').setup({
 
       -- Useful status updates for LSP
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim', opts = {} },
+      { 'j-hui/fidget.nvim',       opts = {} },
 
       -- Additional lua configuration, makes nvim stuff amazing!
-      'folke/neodev.nvim',
+      { 'folke/neodev.nvim', opts = { library = { plugins = { "nvim-dap-ui" }, types = true }, },
+      },
     },
   },
 
@@ -116,6 +122,12 @@ require('lazy').setup({
       -- Adds a number of user-friendly snippets
       'rafamadriz/friendly-snippets',
     },
+  },
+
+  {
+    'ray-x/lsp_signature.nvim',
+    opts = {},
+    config = function(_, opts) require 'lsp_signature'.setup(opts) end
   },
 
   -- Useful plugin to show you pending keybinds.
@@ -257,6 +269,7 @@ require('lazy').setup({
     },
   },
 
+
   {
     -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
@@ -278,6 +291,10 @@ require('lazy').setup({
   --
   --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
   { import = 'custom.plugins' },
+
+  {
+    'razzmatazz/csharp-language-server',
+  },
 
 }, {})
 
@@ -304,10 +321,20 @@ vim.wo.relativenumber = true
 -- Enable mouse mode
 vim.o.mouse = 'a'
 
+in_wsl = os.getenv('WSL_DISTRO_NAME') ~= nil
+
 -- Sync clipboard between OS and Neovim.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
-vim.o.clipboard = 'unnamedplus'
+-- vim.o.clipboard = 'unnamedplus'
+if in_wsl then
+  vim.g.clipboard = {
+    name = 'wsl clipboard',
+    copy = { ["+"] = { "clip.exe" }, ["*"] = { "clip.exe" } },
+    paste = { ["+"] = { "nvim_paste" }, ["*"] = { "nvim_paste" } },
+    cache_enabled = true
+  }
+end
 
 -- Enable break indent
 vim.o.breakindent = true
@@ -445,7 +472,7 @@ vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = 
 vim.defer_fn(function()
   require('nvim-treesitter.configs').setup {
     -- Add languages to be installed here that you want installed for treesitter
-   ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim', 'bash', 'ocaml', },
+    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim', 'bash', 'ocaml', },
 
     -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
     auto_install = false,
@@ -602,18 +629,19 @@ require('mason-lspconfig').setup()
 local servers = {
   -- clangd = {},
   gopls = {
+    experimentalPostfixCompletions = true,
     analyses = {
-      unusedparams = true,
+      unsuedparams = true,
+      shadow = true,
     },
     staticcheck = true,
-    gofumpt = true,
   },
   -- pyright = {},
   rust_analyzer = {},
   -- tsserver = {},
   html = { filetypes = { 'html', 'twig', 'hbs' } },
   ocamllsp = {},
-
+  csharp_ls = {},
   lua_ls = {
     Lua = {
       workspace = { checkThirdParty = false },
@@ -641,6 +669,7 @@ mason_lspconfig.setup {
 mason_lspconfig.setup_handlers {
   function(server_name)
     require('lspconfig')[server_name].setup {
+      --cmd = (servers[server_name] or {}).cmd,
       capabilities = capabilities,
       on_attach = on_attach,
       settings = servers[server_name],
@@ -648,6 +677,9 @@ mason_lspconfig.setup_handlers {
     }
   end,
 }
+
+require('lspconfig').csharp_ls.setup {}
+require('lsp_signature').setup {}
 
 -- [[ Configure nvim-cmp ]]
 -- See `:help cmp`
