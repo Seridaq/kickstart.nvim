@@ -49,7 +49,7 @@ return {
 			vim.keymap.set('n', '<leader>hl', function() require('harpoon.ui').nav_file(3) end,
 				{ desc = '[H]arpoon nav file 3.' })
 
-			vim.keymap.set('n', '<leader>;', function() require('harpoon.ui').nav_file(4) end,
+			vim.keymap.set('n', '<leader>h;', function() require('harpoon.ui').nav_file(4) end,
 				{ desc = '[H]arpoon nav file 4.' })
 		end,
 	},
